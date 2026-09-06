@@ -1,59 +1,23 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ảnh đại diện An Tịnh</title>
+<title>Khung ảnh Nhà Hàng Chay An Tịnh</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#29160b;color:#f5d58c;font-family:Arial,sans-serif}
-.wrap{max-width:760px;margin:auto;padding:18px 14px 35px;text-align:center}
-h1{margin:5px 0;color:#f3c65e;font-size:27px}p{color:#d9b979;font-size:14px}
-.card{background:#38200f;border:1px solid #aa7026;border-radius:18px;padding:15px;box-shadow:0 15px 40px #0008}
-input[type=file]{display:none}.pick,button{border:0;border-radius:11px;padding:13px 16px;font-weight:700;cursor:pointer}
-.pick{display:block;background:#e1b04a;color:#281506;margin-bottom:12px}
-.stage{width:min(94vw,680px);margin:auto;overflow:hidden}
-canvas{width:100%;height:auto;display:block;touch-action:none;background:#4a2815}
-.controls{text-align:left;margin-top:12px}.controls label{font-size:13px;display:block;margin-bottom:5px}
-#zoom{width:100%;accent-color:#dda942}.buttons{display:flex;gap:10px;margin-top:10px}.buttons button{flex:1;background:#dcae49;color:#281506}.buttons .reset{background:#5b351a;color:#f4d58c}
-.note{font-size:12px;line-height:1.5;margin-bottom:0}
+*{box-sizing:border-box}
+html,body{margin:0;background:#120b05}
+body{min-height:100vh;display:grid;place-items:center;padding:16px}
+.frame-wrap{position:relative;width:min(96vw,1000px);aspect-ratio:1/1;overflow:hidden}
+.photo,.frame{position:absolute;inset:0;width:100%;height:100%}
+.photo{object-fit:cover}
+.frame{object-fit:contain;pointer-events:none}
 </style>
 </head>
 <body>
-<div class="wrap">
-<h1>ẢNH ĐẠI DIỆN AN TỊNH</h1>
-<p>Khung chùa cổ • hoa sen • sắc vàng nâu</p>
-<div class="card">
-<label class="pick" for="photo">📷 CHỌN ẢNH CỦA BẠN</label>
-<input id="photo" type="file" accept="image/*">
-<div class="stage"><canvas id="c" width="1536" height="1536"></canvas></div>
-<div class="controls">
-<label for="zoom">Phóng to / thu nhỏ</label>
-<input id="zoom" type="range" min=".5" max="3" value="1" step=".01">
-<div class="buttons"><button class="reset" id="reset">↺ CĂN LẠI</button><button id="download">⬇ TẢI ẢNH</button></div>
+<div class="frame-wrap">
+  <img class="photo" src="photo.jpg" alt="Ảnh khách">
+  <img class="frame" src="an-tinh-frame.png" alt="Khung ảnh An Tịnh">
 </div>
-<p class="note">Ảnh được phủ kín toàn bộ vùng trống bên trong khung theo đúng hình dáng của khung, không giới hạn thành một vòng tròn.</p>
-</div>
-</div>
-<script>
-const c=document.getElementById('c'),ctx=c.getContext('2d');
-const input=document.getElementById('photo'),zoom=document.getElementById('zoom');
-const frame=new Image();frame.src='khung_an_tinh_toan_bo_vong_trong.png';
-let photo=null,scale=1,ox=0,oy=0,drag=false,sx=0,sy=0,sox=0,soy=0;
-function draw(){
- const W=c.width,H=c.height;ctx.clearRect(0,0,W,H);ctx.fillStyle='#4a2815';ctx.fillRect(0,0,W,H);
- if(photo){const base=Math.max(W/photo.width,H/photo.height),s=base*scale,dw=photo.width*s,dh=photo.height*s;ctx.drawImage(photo,(W-dw)/2+ox,(H-dh)/2+oy,dw,dh)}
- if(frame.complete)ctx.drawImage(frame,0,0,W,H);
-}
-frame.onload=draw;
-input.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{photo=im;scale=1;ox=oy=0;zoom.value=1;draw()};im.src=r.result};r.readAsDataURL(f)};
-zoom.oninput=()=>{scale=+zoom.value;draw()};
-document.getElementById('reset').onclick=()=>{scale=1;ox=oy=0;zoom.value=1;draw()};
-function pos(e){const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}}
-c.onpointerdown=e=>{if(!photo)return;drag=true;c.setPointerCapture(e.pointerId);let p=pos(e);sx=p.x;sy=p.y;sox=ox;soy=oy};
-c.onpointermove=e=>{if(!drag)return;let p=pos(e);ox=sox+p.x-sx;oy=soy+p.y-sy;draw()};
-c.onpointerup=()=>drag=false;c.onpointercancel=()=>drag=false;
-document.getElementById('download').onclick=()=>{if(!photo){alert('Vui lòng chọn ảnh trước.');return}const a=document.createElement('a');a.download='Anh-dai-dien-An-Tinh.png';a.href=c.toDataURL('image/png');a.click()};
-draw();
-</script>
 </body>
 </html>
