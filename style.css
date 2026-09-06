@@ -1,0 +1,47 @@
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  background:#4a2815;
+  color:#f7e3b1;
+  font-family:Arial,Helvetica,sans-serif;
+}
+.container{width:min(100%,720px);margin:auto;padding:22px 14px 35px}
+header{text-align:center;margin-bottom:18px}
+h1{margin:4px 0 7px;font-size:27px;letter-spacing:1px;color:#ffd978}
+header p{margin:0;color:#e6c88c;font-size:14px}
+.card{
+  background:#2b180d;
+  border:1px solid #a56e2b;
+  border-radius:20px;
+  padding:16px;
+  box-shadow:0 12px 35px #0008;
+}
+.upload-btn,button{
+  display:block;width:100%;border:0;border-radius:12px;
+  padding:14px 16px;font-size:15px;font-weight:700;cursor:pointer;
+}
+.upload-btn{background:#d8a846;color:#241407;text-align:center}
+#photoInput{display:none}
+.preview{display:flex;justify-content:center;padding:16px 0}
+canvas{
+  width:min(92vw,600px);
+  height:min(92vw,600px);
+  display:block;
+  border-radius:50%;
+  background:#351b0d;
+  touch-action:none;
+}
+.tools label{display:block;font-size:13px;margin:3px 0 6px;color:#e9cf9a}
+#zoom{width:100%;accent-color:#d9a946}
+.buttons{display:grid;grid-template-columns:1fr 1.5fr;gap:10px;margin-top:12px}
+button{background:#e0b14f;color:#241407}
+button.secondary{background:#52321c;color:#f3d99f}
+.note{text-align:center;color:#c9a974;font-size:12px;line-height:1.5;margin:13px 2px 2px}
+footer{text-align:center;margin-top:18px;font-size:12px;color:#d6b579}
+footer strong{display:block;color:#f0c86c;margin-bottom:5px}
+footer span{display:block}
+@media(max-width:480px){
+  h1{font-size:22px}
+  .buttons{grid-template-columns:1fr}
+}
