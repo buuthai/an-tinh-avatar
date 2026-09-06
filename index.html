@@ -3,65 +3,65 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Khung ảnh An Tịnh</title>
+<title>Khung ảnh Nhà Hàng Chay An Tịnh</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#160d06;color:#f8e6bf;font-family:Arial,sans-serif;text-align:center}
-.wrap{max-width:900px;margin:auto;padding:20px}
-h1{font-size:24px;margin:8px 0 6px}
-p{margin:6px 0 16px;color:#e6cf9f}
-.controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
-button,.file-label{border:1px solid #c9983e;background:#2a1709;color:#ffe7a7;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:15px}
-button:hover,.file-label:hover{background:#41240e}
+body{margin:0;background:#160d06;color:#f6dfad;font-family:Arial,sans-serif;text-align:center}
+.wrap{width:min(94vw,900px);margin:auto;padding:18px}
+h1{font-size:22px;margin:5px 0 8px}
+p{margin:0 0 14px;opacity:.9}
+.controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:15px}
+label,button{border:1px solid #c9983e;background:#2b1809;color:#ffe5a2;padding:10px 17px;border-radius:8px;cursor:pointer;font-size:15px}
 input{display:none}
-.stage{position:relative;width:min(92vw,800px);aspect-ratio:1/1;margin:auto;overflow:hidden}
-#photoCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:1}
-#frame{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
-.hint{font-size:13px;margin-top:12px;opacity:.8}
+.stage{position:relative;width:min(94vw,850px);aspect-ratio:1/1;margin:auto;overflow:hidden}
+#canvas,#frame{position:absolute;inset:0;width:100%;height:100%}
+#canvas{z-index:1}
+#frame{z-index:2;pointer-events:none}
 </style>
 </head>
 <body>
 <div class="wrap">
 <h1>Khung ảnh Nhà Hàng Chay An Tịnh</h1>
-<p>Chọn ảnh của khách — ảnh sẽ tự động nằm trong vùng tròn trung tâm.</p>
+<p>Ảnh khách được cắt kín toàn bộ vùng trung tâm — không còn viền trắng/checkerboard.</p>
 <div class="controls">
-<label class="file-label">📷 Chọn ảnh<input id="file" type="file" accept="image/*"></label>
-<button id="download">⬇ Tải ảnh đã ghép</button>
+<label>📷 Chọn ảnh<input id="file" type="file" accept="image/*"></label>
+<button id="save">⬇ Tải ảnh đã ghép</button>
 </div>
 <div class="stage">
-<canvas id="photoCanvas" width="1254" height="1254"></canvas>
+<canvas id="canvas" width="1254" height="1254"></canvas>
 <img id="frame" src="an-tinh-frame.png" alt="Khung An Tịnh">
 </div>
-<div class="hint">Khung và logo nằm phía trên; không có chi tiết trang trí nào phủ lên ảnh khách.</div>
 </div>
-<script>
-const fileInput=document.getElementById('file');
-const canvas=document.getElementById('photoCanvas');
-const ctx=canvas.getContext('2d');
-const download=document.getElementById('download');
-const W=1254,H=1254;
-const cx=W/2, cy=H/2+8, r=Math.min(W,H)*0.307;
 
-function drawPlaceholder(){
+<script>
+const W=1254, H=1254;
+const cx=W/2, cy=H/2+8, R=Math.min(W,H)*0.315;
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+let currentImage=null;
+
+function clearPhoto(){
   ctx.clearRect(0,0,W,H);
-  ctx.fillStyle="#ffffff";
+  ctx.fillStyle='#ffffff';
   ctx.fillRect(0,0,W,H);
 }
-drawPlaceholder();
+clearPhoto();
 
-fileInput.addEventListener('change',e=>{
-  const f=e.target.files[0]; if(!f)return;
-  const url=URL.createObjectURL(f);
+document.getElementById('file').addEventListener('change', e => {
+  const file=e.target.files[0];
+  if(!file) return;
+  const url=URL.createObjectURL(file);
   const img=new Image();
   img.onload=()=>{
+    currentImage=img;
     ctx.clearRect(0,0,W,H);
     ctx.save();
     ctx.beginPath();
-    ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.arc(cx,cy,R,0,Math.PI*2);
     ctx.clip();
 
-    // Cover: ảnh lấp đầy toàn bộ vùng tròn, không để viền trắng.
-    const scale=Math.max((r*2)/img.width,(r*2)/img.height);
+    // Cover the entire transparent opening.
+    const scale=Math.max((2*R)/img.width,(2*R)/img.height);
     const dw=img.width*scale, dh=img.height*scale;
     ctx.drawImage(img,cx-dw/2,cy-dh/2,dw,dh);
     ctx.restore();
@@ -70,21 +70,22 @@ fileInput.addEventListener('change',e=>{
   img.src=url;
 });
 
-download.addEventListener('click',()=>{
-  // Ghép canvas ảnh khách + PNG khung thành một ảnh cuối.
+document.getElementById('save').addEventListener('click',()=>{
+  if(!currentImage){ alert('Vui lòng chọn ảnh trước.'); return; }
   const out=document.createElement('canvas');
   out.width=W; out.height=H;
   const o=out.getContext('2d');
-  o.drawImage(canvas,0,0,W,H);
-  const frameImg=new Image();
-  frameImg.onload=()=>{
-    o.drawImage(frameImg,0,0,W,H);
+  o.drawImage(canvas,0,0);
+
+  const frame=new Image();
+  frame.onload=()=>{
+    o.drawImage(frame,0,0);
     const a=document.createElement('a');
     a.download='an-tinh-khung-anh.png';
     a.href=out.toDataURL('image/png');
     a.click();
   };
-  frameImg.src='an-tinh-frame.png';
+  frame.src='an-tinh-frame.png';
 });
 </script>
 </body>
