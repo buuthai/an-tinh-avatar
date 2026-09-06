@@ -1,38 +1,132 @@
 <!doctype html>
 <html lang="vi">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Khung ảnh An Tịnh</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Khung ảnh Nhà Hàng Chay An Tịnh</title>
 <style>
-*{box-sizing:border-box} body{margin:0;background:#eee;color:#382512;font-family:Arial,sans-serif;text-align:center}
-main{max-width:900px;margin:auto;padding:18px} h1{font-size:22px} p{margin:8px 0 16px}
+*{box-sizing:border-box}
+body{margin:0;background:#eee;color:#382512;font-family:Arial,sans-serif;text-align:center}
+main{max-width:900px;margin:auto;padding:18px}
+h1{font-size:22px;margin:5px 0 8px}
+p{margin:0 0 14px}
 .controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-label,button{padding:10px 17px;border:1px solid #b88a38;border-radius:8px;background:#fff6df;color:#55350f;cursor:pointer}
-input{display:none} .stage{position:relative;width:min(94vw,850px);aspect-ratio:1;margin:16px auto;overflow:hidden}
-canvas,img{position:absolute;inset:0;width:100%;height:100%} canvas{z-index:1} img{z-index:2;pointer-events:none}
-</style></head>
-<body><main>
+button,label{padding:11px 18px;border:1px solid #b88a38;border-radius:8px;background:#fff6df;color:#55350f;cursor:pointer;font-size:15px}
+input{display:none}
+.stage{position:relative;width:min(94vw,850px);aspect-ratio:1/1;margin:16px auto;overflow:hidden}
+#photo,#frame{position:absolute;inset:0;width:100%;height:100%}
+#photo{z-index:1} #frame{z-index:2;pointer-events:none}
+#status{min-height:22px;margin-top:10px;font-size:14px}
+</style>
+</head>
+<body>
+<main>
 <h1>Khung ảnh Nhà Hàng Chay An Tịnh</h1>
-<p>Chọn ảnh khách để đặt vào vùng trung tâm.</p>
+<p>Chọn ảnh khách, sau đó bấm <b>Tải ảnh đã ghép</b>.</p>
 <div class="controls">
 <label>📷 Chọn ảnh<input id="file" type="file" accept="image/*"></label>
-<button id="save">⬇ Tải ảnh đã ghép</button>
+<button id="save" type="button">⬇ Tải ảnh đã ghép</button>
 </div>
-<div class="stage"><canvas id="photo" width="1254" height="1254"></canvas><img src="an-tinh-frame.png" alt="Khung An Tịnh"></div>
+<div id="status"></div>
+<div class="stage">
+<canvas id="photo" width="1254" height="1254"></canvas>
+<img id="frame" src="an-tinh-frame.png" alt="Khung An Tịnh">
+</div>
 </main>
+
 <script>
-const W=1254,H=1254,CX=W/2,CY=700,RX=315,RY=315;
-const c=document.getElementById('photo'),ctx=c.getContext('2d'); let ready=false;
-ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
-document.getElementById('file').onchange=e=>{
- const f=e.target.files[0];if(!f)return;const u=URL.createObjectURL(f),im=new Image();
- im.onload=()=>{ctx.clearRect(0,0,W,H);ctx.save();ctx.beginPath();ctx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);ctx.clip();
- const s=Math.max(2*RX/im.width,2*RY/im.height),dw=im.width*s,dh=im.height*s;
- ctx.drawImage(im,CX-dw/2,CY-dh/2,dw,dh);ctx.restore();ready=true;URL.revokeObjectURL(u);};im.src=u;
-};
-document.getElementById('save').onclick=()=>{
- if(!ready)return alert('Vui lòng chọn ảnh trước.');
- const o=document.createElement('canvas');o.width=W;o.height=H;const x=o.getContext('2d');x.drawImage(c,0,0);
- const f=new Image();f.onload=()=>{x.drawImage(f,0,0);const a=document.createElement('a');a.download='an-tinh-khung-anh.png';a.href=o.toDataURL('image/png');a.click();};f.src='an-tinh-frame.png';
-};
-</script></body></html>
+const W=1254, H=1254, CX=W/2, CY=700, RX=315, RY=315;
+const canvas=document.getElementById('photo');
+const ctx=canvas.getContext('2d');
+const status=document.getElementById('status');
+let hasPhoto=false;
+
+ctx.fillStyle='#fff';
+ctx.fillRect(0,0,W,H);
+
+document.getElementById('file').addEventListener('change', function(e){
+  const file=e.target.files && e.target.files[0];
+  if(!file)return;
+
+  status.textContent='Đang xử lý ảnh...';
+  const url=URL.createObjectURL(file);
+  const img=new Image();
+
+  img.onload=function(){
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
+    ctx.clip();
+
+    const scale=Math.max((RX*2)/img.width,(RY*2)/img.height);
+    const dw=img.width*scale;
+    const dh=img.height*scale;
+    ctx.drawImage(img,CX-dw/2,CY-dh/2,dw,dh);
+
+    ctx.restore();
+    hasPhoto=true;
+    status.textContent='Ảnh đã sẵn sàng. Hãy bấm “Tải ảnh đã ghép”.';
+    URL.revokeObjectURL(url);
+  };
+
+  img.onerror=function(){
+    status.textContent='Không đọc được ảnh này. Vui lòng chọn ảnh JPG hoặc PNG khác.';
+    URL.revokeObjectURL(url);
+  };
+  img.src=url;
+});
+
+document.getElementById('save').addEventListener('click', function(){
+  if(!hasPhoto){
+    status.textContent='Vui lòng chọn ảnh trước.';
+    return;
+  }
+
+  status.textContent='Đang tạo ảnh tải xuống...';
+
+  const out=document.createElement('canvas');
+  out.width=W;
+  out.height=H;
+  const o=out.getContext('2d');
+
+  // White base is intentional only behind the photo area; the transparent
+  // frame controls all visible decoration.
+  o.drawImage(canvas,0,0,W,H);
+
+  const frameImg=new Image();
+  frameImg.onload=function(){
+    o.drawImage(frameImg,0,0,W,H);
+
+    // Reliable browser download: PNG Blob + object URL.
+    out.toBlob(function(blob){
+      if(!blob){
+        status.textContent='Trình duyệt không tạo được file. Hãy thử Chrome/Edge mới nhất.';
+        return;
+      }
+
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;
+      a.download='an-tinh-khung-anh.png';
+      a.style.display='none';
+      document.body.appendChild(a);
+      a.click();
+
+      // Keep URL alive briefly so Chrome/Edge can finish the download.
+      setTimeout(function(){
+        a.remove();
+        URL.revokeObjectURL(url);
+        status.textContent='Đã tạo xong ảnh. Kiểm tra thư mục Downloads/Tải xuống.';
+      },3000);
+    },'image/png');
+  };
+
+  frameImg.onerror=function(){
+    status.textContent='Không tải được file khung. Hãy kiểm tra an-tinh-frame.png có cùng thư mục với index.html.';
+  };
+  frameImg.src='an-tinh-frame.png';
+});
+</script>
+</body>
+</html>
