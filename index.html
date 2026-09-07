@@ -74,7 +74,7 @@ button:hover{background:#ffefca}
 </div>
 
 <div class="sec">
-<button id="download" class="primary">⬇ TẢI HÌNH PNG</button>
+<button id="download" class="primary">⬇ TẢI HÌNH PNG</button><div id="downloadArea" style="display:none;margin-top:9px;padding:10px;background:#fff8e9;border:1px solid #e2c98f;border-radius:8px;font-size:12px"><div style="margin-bottom:6px"><b>File đã sẵn sàng.</b> Nếu máy không tự tải, hãy bấm:</div><a id="downloadLink" href="#" download="an-tinh-khung-anh.png" style="display:inline-block;padding:8px 10px;background:#a96d18;color:#fff;border-radius:7px;text-decoration:none;font-weight:700">⬇ TẢI FILE PNG</a></div>
 <p class="small"><b>Tải xuống:</b> trình duyệt sẽ lưu file vào thư mục <b>Downloads / Tải xuống</b> hoặc hỏi vị trí lưu tùy cài đặt.</p>
 <div class="help">Nếu bấm mà trình duyệt chặn tải tự động, nút sẽ mở ảnh PNG để bạn nhấn Ctrl+S lưu lại.</div>
 </div>
@@ -162,27 +162,76 @@ $("file").onchange=e=>{
 
 async function downloadPNG(){
  if(!photo){alert("Bạn chưa tải hình lên.");return;}
- draw();
- await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
- canvas.toBlob(blob=>{
-   if(!blob){
-     const data=canvas.toDataURL("image/png");
-     const w=window.open();
-     if(w){w.document.write('<title>an-tinh-khung-anh.png</title><img style="max-width:100%" src="'+data+'">');}
-     else alert("Trình duyệt đã chặn cửa sổ tải. Hãy cho phép tải xuống/cửa sổ bật lên.");
-     return;
+
+ const button=$("download");
+ const area=$("downloadArea");
+ const link=$("downloadLink");
+ button.disabled=true;
+ button.textContent="⏳ ĐANG TẠO FILE...";
+
+ try{
+   draw();
+
+   const blob=await new Promise((resolve,reject)=>{
+     canvas.toBlob(b=>b ? resolve(b) : reject(new Error("Không tạo được PNG")), "image/png");
+   });
+
+   // Cách 1: Chrome/Edge hỗ trợ hộp thoại lưu file.
+   // Người dùng tự chọn nơi lưu nên không phụ thuộc thư mục Downloads.
+   if(window.showSaveFilePicker){
+     try{
+       const handle=await window.showSaveFilePicker({
+         suggestedName:"an-tinh-khung-anh.png",
+         types:[{
+           description:"Ảnh PNG",
+           accept:{"image/png":[".png"]}
+         }]
+       });
+       const writable=await handle.createWritable();
+       await writable.write(blob);
+       await writable.close();
+
+       $("status").textContent="Đã lưu thành công file an-tinh-khung-anh.png vào vị trí bạn vừa chọn.";
+       area.style.display="none";
+       return;
+     }catch(err){
+       // Người dùng bấm Cancel thì không báo lỗi; nếu API bị từ chối,
+       // tiếp tục xuống phương án tải dự phòng.
+       if(err && err.name==="AbortError"){
+         $("status").textContent="Bạn đã hủy chọn nơi lưu file.";
+         return;
+       }
+     }
    }
+
+   // Cách 2: tải bằng thẻ <a download>.
+   // Đồng thời hiện link rõ ràng để người dùng bấm nếu trình duyệt
+   // không cho phép click tự động.
    const url=URL.createObjectURL(blob);
-   const a=document.createElement("a");
-   a.href=url;a.download="an-tinh-khung-anh.png";
-   a.style.display="none";document.body.appendChild(a);
-   try{a.click()}catch(e){
-     const w=window.open(url,"_blank");
-     if(!w) alert("Trình duyệt đã chặn tải xuống. Hãy cho phép tải file.");
-   }
-   setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},3000);
-   $("status").textContent="Đã tạo file PNG — kiểm tra thư mục Downloads / Tải xuống.";
- }, "image/png");
+   link.href=url;
+   link.download="an-tinh-khung-anh.png";
+   area.style.display="block";
+
+   const temp=document.createElement("a");
+   temp.href=url;
+   temp.download="an-tinh-khung-anh.png";
+   temp.style.position="fixed";
+   temp.style.left="-9999px";
+   document.body.appendChild(temp);
+   temp.click();
+   temp.remove();
+
+   $("status").textContent="Đã tạo file PNG. Nếu file chưa tự tải, hãy bấm nút «TẢI FILE PNG» ngay bên dưới.";
+   setTimeout(()=>URL.revokeObjectURL(url),60000);
+
+ }catch(err){
+   console.error(err);
+   $("status").textContent="Không thể tạo file PNG. Hãy thử lại hoặc bấm tải file dự phòng.";
+   alert("Không thể tạo file PNG. Vui lòng thử lại.");
+ }finally{
+   button.disabled=false;
+   button.textContent="⬇ TẢI HÌNH PNG";
+ }
 }
 
 load(FRAME).then(im=>{frame=im;$("status").textContent="Khung đã sẵn sàng. Hãy tải hình lên.";draw()})
