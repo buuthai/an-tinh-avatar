@@ -164,6 +164,11 @@ $("file").onchange=e=>{
  reader.readAsDataURL(f);
 };
 
+function isIOS(){
+ return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+}
+
 function downloadPNG(){
  if(!photo){
    $("status").textContent="❌ LỖI: Bạn chưa tải hình lên.";
@@ -182,21 +187,60 @@ function downloadPNG(){
  try{
    draw();
 
-   // Xuất ảnh trực tiếp bằng data URL.
-   // Không dùng showSaveFilePicker, không dùng await,
-   // không phụ thuộc quyền user activation của trình duyệt.
-   const dataURL=canvas.toDataURL("image/png");
+   // iPhone/iPad Safari xử lý thuộc tính download khác Android.
+   // Trên iOS, tạo data URL và mở ảnh PNG trong tab mới.
+   // Người dùng có thể dùng Share → Save Image/Lưu hình ảnh.
+   if(isIOS()){
+     const dataURL=canvas.toDataURL("image/png");
 
-   if(!dataURL || dataURL.length<1000){
-     throw new Error("File PNG được tạo không hợp lệ.");
+     if(!dataURL || dataURL.length<1000){
+       throw new Error("Không tạo được file PNG trên iPhone.");
+     }
+
+     link.href=dataURL;
+     link.download="";
+     link.target="_blank";
+     link.rel="noopener";
+     link.textContent="📱 MỞ HÌNH PNG ĐỂ LƯU TRÊN IPHONE";
+     area.style.display="block";
+
+     // Mở ngay trong cùng thao tác click để Safari không chặn popup.
+     const opened=window.open();
+     if(opened){
+       opened.document.open();
+       opened.document.write(
+         '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">'
+         +'<title>An Tịnh - Hình PNG</title></head>'
+         +'<body style="margin:0;background:#222;display:flex;align-items:center;justify-content:center;min-height:100vh">'
+         +'<img src="'+dataURL+'" style="max-width:100%;height:auto;display:block" '
+         +'alt="An Tịnh - Hình PNG">'
+         +'</body></html>'
+       );
+       opened.document.close();
+
+       $("status").textContent="📱 HÌNH ĐÃ SẴN SÀNG. Trên iPhone, bấm nút Chia sẻ → Lưu hình ảnh (Save Image).";
+     }else{
+       $("status").textContent="📱 Hãy bấm nút «MỞ HÌNH PNG ĐỂ LƯU TRÊN IPHONE» bên dưới. Nếu Safari hỏi, cho phép mở trang.";
+     }
+
+     button.disabled=false;
+     button.textContent="⬇ TẢI HÌNH PNG";
+     return;
    }
 
-   // Tạo link tải thật sự để người dùng có thể bấm và lưu.
+   // Android/desktop: giữ nguyên cách tải hiện tại.
+   const dataURL=canvas.toDataURL("image/png");
+   if(!dataURL || dataURL.length<1000){
+     throw new Error("Không tạo được file PNG.");
+   }
+
    link.href=dataURL;
    link.download="an-tinh-khung-anh.png";
+   link.target="_self";
+   link.rel="";
+   link.textContent="⬇ LƯU FILE PNG VÀO MÁY";
    area.style.display="block";
 
-   // Thử tải tự động một lần.
    const a=document.createElement("a");
    a.href=dataURL;
    a.download="an-tinh-khung-anh.png";
@@ -207,8 +251,7 @@ function downloadPNG(){
 
    button.disabled=false;
    button.textContent="⬇ TẢI HÌNH PNG";
-
-   $("status").textContent="✅ ĐÃ TẠO HÌNH THÀNH CÔNG. Nếu file chưa tự lưu, hãy bấm nút «LƯU FILE PNG VÀO MÁY» bên dưới.";
+   $("status").textContent="✅ ĐÃ TẠO HÌNH THÀNH CÔNG. Nếu chưa tự lưu, hãy bấm «LƯU FILE PNG VÀO MÁY».";
  }catch(err){
    console.error(err);
    button.disabled=false;
