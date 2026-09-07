@@ -170,10 +170,25 @@ async function downloadPNG(){
  const button=$("download");
  const area=$("downloadArea");
  button.disabled=true;
- button.textContent="⏳ ĐANG CHUẨN BỊ FILE...";
+ button.textContent="⏳ ĐANG TẠO FILE...";
  area.style.display="none";
 
+ let fileHandle=null;
+
  try{
+   // PHẢI mở hộp thoại lưu NGAY khi người dùng bấm nút.
+   // Không await trước bước này để tránh Chrome mất quyền user activation.
+   if(window.isSecureContext && "showSaveFilePicker" in window){
+     fileHandle=await window.showSaveFilePicker({
+       suggestedName:"an-tinh-khung-anh.png",
+       types:[{
+         description:"Ảnh PNG",
+         accept:{"image/png":[".png"]}
+       }]
+     });
+   }
+
+   // Sau khi người dùng chọn nơi lưu, mới tạo PNG.
    draw();
    await new Promise(resolve=>requestAnimationFrame(resolve));
 
@@ -184,30 +199,50 @@ async function downloadPNG(){
      },"image/png");
    });
 
-   // Chrome/Edge desktop: cho người dùng chọn chính xác thư mục và tên file.
-   if(window.isSecureContext && "showSaveFilePicker" in window){
-     const handle=await window.showSaveFilePicker({
-       suggestedName:"an-tinh-khung-anh.png",
-       types:[{description:"Ảnh PNG",accept:{"image/png":[".png"]}}]
-     });
-
-     const writable=await handle.createWritable();
+   if(fileHandle){
+     const writable=await fileHandle.createWritable();
      await writable.write(blob);
      await writable.close();
 
-     $("status").textContent="✅ TẢI THÀNH CÔNG! File đã được lưu vào nơi bạn vừa chọn.";
+     $("status").textContent="✅ TẢI THÀNH CÔNG! File an-tinh-khung-anh.png đã được lưu vào đúng nơi bạn chọn.";
      button.textContent="✅ TẢI THÀNH CÔNG";
-     setTimeout(()=>button.textContent="⬇ TẢI HÌNH PNG",2500);
+     setTimeout(()=>{button.textContent="⬇ TẢI HÌNH PNG";},3000);
      return;
    }
 
-   throw new Error("Trình duyệt hiện tại không hỗ trợ chọn nơi lưu file. Hãy dùng Chrome hoặc Microsoft Edge trên máy tính và mở GitHub Pages bằng HTTPS.");
+   // Fallback cho trình duyệt không hỗ trợ showSaveFilePicker.
+   // Dùng một trang tải nội bộ của trình duyệt và hiện nút tải rõ ràng.
+   const url=URL.createObjectURL(blob);
+   area.style.display="block";
+   const link=$("downloadLink");
+   if(link){
+     link.href=url;
+     link.download="an-tinh-khung-anh.png";
+     link.textContent="⬇ BẤM VÀO ĐÂY ĐỂ TẢI FILE PNG";
+     link.onclick=()=>setTimeout(()=>{
+       $("status").textContent="Đã yêu cầu tải file. Hãy kiểm tra thư mục Downloads / Tải xuống.";
+     },300);
+   }
+
+   // Thử tải tự động trong fallback.
+   const a=document.createElement("a");
+   a.href=url;
+   a.download="an-tinh-khung-anh.png";
+   a.setAttribute("download","an-tinh-khung-anh.png");
+   a.style.display="none";
+   document.body.appendChild(a);
+   a.click();
+   a.remove();
+
+   $("status").textContent="Đã tạo file PNG. Nếu chưa thấy tải xuống, hãy bấm nút TẢI FILE PNG xuất hiện bên dưới.";
+   setTimeout(()=>URL.revokeObjectURL(url),120000);
 
  }catch(err){
    console.error("Download error:",err);
 
    if(err && err.name==="AbortError"){
-     $("status").textContent="⚠️ Bạn đã hủy thao tác. File chưa được tải xuống.";
+     $("status").textContent="⚠️ Bạn đã hủy chọn nơi lưu. File chưa được tải xuống.";
+     button.textContent="⬇ TẢI HÌNH PNG";
      return;
    }
 
@@ -216,7 +251,7 @@ async function downloadPNG(){
    alert("❌ Tải hình không thành công.\n\n"+msg);
  }finally{
    button.disabled=false;
-   if(button.textContent!=="✅ TẢI THÀNH CÔNG"){
+   if(button.textContent==="⏳ ĐANG TẠO FILE..."){
      button.textContent="⬇ TẢI HÌNH PNG";
    }
  }
