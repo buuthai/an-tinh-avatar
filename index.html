@@ -5,67 +5,247 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Khung ảnh An Tịnh</title>
 <style>
-*{box-sizing:border-box} body{margin:0;background:#f7efe2;color:#342719;font-family:Arial,system-ui,sans-serif}
-.app{max-width:1280px;margin:auto;padding:20px} h1{margin:0;color:#5b3718;font-size:25px}
-.sub{margin:6px 0 18px;color:#765f48;font-size:14px} .grid{display:grid;grid-template-columns:minmax(400px,1fr) 350px;gap:20px}
-.card{background:#fff;border:1px solid #e6d4b5;border-radius:16px;box-shadow:0 8px 28px #6b421b22}
-.preview{padding:15px} .wrap{aspect-ratio:1;background:#eee;overflow:hidden;border-radius:11px}
-canvas{display:block;width:100%;height:100%} .controls{padding:18px}
-section{padding-bottom:15px;margin-bottom:15px;border-bottom:1px solid #eadfce}
-label{display:flex;justify-content:space-between;margin:9px 0 5px;font-size:13px;font-weight:700}
-input[type=range]{width:100%} input[type=file]{width:100%} button{padding:9px 11px;border-radius:8px;border:1px solid #cba35d;background:#fff7e7;font-weight:700;cursor:pointer}
-.row{display:flex;gap:7px;flex-wrap:wrap} .primary{width:100%;background:#a87522;color:white;border:0;padding:12px;font-size:15px}
-.small{font-size:12px;color:#75624e;line-height:1.45} .status{padding:9px;background:#faf3e7;border-radius:8px;font-size:12px;margin-top:10px}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,#f6ecdc,#fffaf0);color:#38291c;font-family:Arial,system-ui,sans-serif}
+.app{max-width:1280px;margin:auto;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}
+h1{margin:0;color:#5c381b;font-size:26px}
+.sub{margin-top:5px;color:#755d45;font-size:14px}
+.badge{background:#f5e3b8;border-radius:20px;padding:6px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.grid{display:grid;grid-template-columns:minmax(420px,1fr) 350px;gap:20px}
+.card{background:#fff;border:1px solid #e5d1ac;border-radius:17px;box-shadow:0 10px 30px rgba(70,43,18,.12)}
+.preview{padding:15px}
+.canvasbox{position:relative;width:100%;aspect-ratio:1;overflow:hidden;border-radius:11px;background:#d9d0c4}
+.canvasbox::before{content:"";position:absolute;inset:0;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 50%/24px 24px}
+canvas{position:relative;width:100%;height:100%;display:block}
+.status{margin-top:10px;padding:10px;background:#faf2e3;border-radius:8px;font-size:12px;color:#715a42}
+.controls{padding:18px}
+section{padding-bottom:15px;margin-bottom:15px;border-bottom:1px solid #eadfcd}
+section:last-child{border-bottom:0;margin-bottom:0}
+label{display:flex;justify-content:space-between;gap:10px;margin:9px 0 5px;font-size:13px;font-weight:700}
+input[type=range]{width:100%;accent-color:#a97620}
+input[type=file]{width:100%}
+.row{display:flex;gap:7px;flex-wrap:wrap}
+button{padding:9px 11px;border:1px solid #cda55d;border-radius:8px;background:#fff7e7;color:#5c3919;font-weight:700;cursor:pointer}
+button:hover{background:#ffefca}
+.primary{width:100%;padding:12px;border:0;background:linear-gradient(135deg,#a96e18,#e2b452);color:#fff;font-size:15px}
+.small{font-size:12px;line-height:1.45;color:#75614c}
+.check{justify-content:flex-start;align-items:center;gap:8px}
+#loading{display:none;color:#8b5d1d;font-size:12px;margin-top:8px}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="app">
+<header>
+<div>
 <h1>Khung ảnh An Tịnh</h1>
-<div class="sub">Vùng mask được flood-fill từ chính giữa, bao phủ toàn bộ phần trong suốt và phần màu đen liên thông bên trong khung.</div>
+<div class="sub">Khung hiển thị ngay khi mở trang • Mask cắt từ tâm, gồm toàn bộ vùng trong suốt và màu đen trung tâm.</div>
+</div>
+<div class="badge">1254 × 1254 px</div>
+</header>
+
 <div class="grid">
-<div class="card preview"><div class="wrap"><canvas id="c" width="1254" height="1254"></canvas></div><div class="status" id="status">Chưa tải ảnh.</div></div>
+<div class="card preview">
+<div class="canvasbox"><canvas id="canvas" width="1254" height="1254"></canvas></div>
+<div class="status" id="status">Đang tải khung...</div>
+</div>
+
 <div class="card controls">
 <section>
-<label>Ảnh tải lên</label><input id="file" type="file" accept="image/*">
-<p class="small">Ảnh không bị gửi lên máy chủ. Có thể chỉnh trực tiếp trên trình duyệt.</p>
+<label>Tải hình lên</label>
+<input id="file" type="file" accept="image/*">
+<div id="loading">Đang xử lý ảnh...</div>
+<p class="small">Ảnh được xử lý ngay trên trình duyệt, không cần máy chủ.</p>
 </section>
+
 <section>
-<label>Phóng to / thu nhỏ <span id="scaleO">100%</span></label><input id="scale" type="range" min="10" max="300" value="100">
-<div class="row"><button onclick="fit('cover')">Vừa khung</button><button onclick="fit('contain')">Vừa đủ ảnh</button><button onclick="resetAll()">Đặt lại</button></div>
+<label>Phóng to / thu nhỏ <span id="scaleO">100%</span></label>
+<input id="scale" type="range" min="10" max="300" value="100">
+<div class="row">
+<button id="fit">Vừa khung</button>
+<button id="contain">Vừa đủ ảnh</button>
+<button id="reset">Đặt lại</button>
+</div>
 </section>
+
 <section>
-<label>Chiều rộng <span id="widthO">100%</span></label><input id="width" type="range" min="10" max="300" value="100">
-<label>Chiều cao <span id="heightO">100%</span></label><input id="height" type="range" min="10" max="300" value="100">
-<label><span><input id="lock" type="checkbox" checked> Khóa tỷ lệ</span></label>
+<label>Chiều rộng <span id="widthO">100%</span></label>
+<input id="width" type="range" min="10" max="300" value="100">
+<label>Chiều cao <span id="heightO">100%</span></label>
+<input id="height" type="range" min="10" max="300" value="100">
+<label class="check"><input id="lock" type="checkbox" checked> Khóa tỷ lệ chiều rộng / chiều cao</label>
 </section>
+
 <section>
-<label>Vị trí ngang <span id="xO">0</span></label><input id="x" type="range" min="-800" max="800" value="0">
-<label>Vị trí dọc <span id="yO">0</span></label><input id="y" type="range" min="-800" max="800" value="0">
+<label>Vị trí ngang <span id="xO">0</span></label>
+<input id="x" type="range" min="-800" max="800" value="0">
+<label>Vị trí dọc <span id="yO">0</span></label>
+<input id="y" type="range" min="-800" max="800" value="0">
 </section>
+
 <section>
-<label>Xoay <span id="rotO">0°</span></label><input id="rot" type="range" min="-180" max="180" value="0">
-<div class="row"><button onclick="flipH()">Lật ngang</button><button onclick="flipV()">Lật dọc</button></div>
+<label>Xoay <span id="rotO">0°</span></label>
+<input id="rot" type="range" min="-180" max="180" value="0">
+<div class="row">
+<button id="flipH">Lật ngang</button>
+<button id="flipV">Lật dọc</button>
+</div>
 </section>
+
 <section>
-<button class="primary" onclick="downloadPNG()">⬇ TẢI KHUNG ẢNH PNG</button>
-<p class="small"><b>Nơi tải:</b> file sẽ được trình duyệt lưu vào thư mục <b>Downloads / Tải xuống</b> theo cài đặt của máy, hoặc Chrome sẽ hỏi vị trí nếu bạn bật tùy chọn hỏi nơi lưu.</p>
+<button id="download" class="primary">⬇ TẢI KHUNG ẢNH PNG</button>
+<p class="small"><b>Nơi tải về:</b> file sẽ nằm trong thư mục <b>Downloads / Tải xuống</b> theo cài đặt trình duyệt. Nếu Chrome hỏi vị trí lưu, bạn chọn thư mục muốn lưu.</p>
 </section>
-</div></div></div>
+
+<section>
+<button id="clear">Xóa ảnh đã tải</button>
+</section>
+</div>
+</div>
+</div>
+
 <script>
-const W=1254,H=1254,OPEN={x:156,y:28,w:937,h:850};
-const c=document.getElementById('c'),ctx=c.getContext('2d');
-const mask=new Image(),frame=new Image(); mask.src='assets/mask.png';frame.src='assets/frame.png';
-let photo=null,base=1,s={scale:100,width:100,height:100,x:0,y:0,rot:0,fh:1,fv:1};
+const W=1254, H=1254;
+const OPEN={x:156, y:28, w:937, h:850};
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+let frameImg=null, maskImg=null, photo=null;
+let baseScale=1;
+let state={scale:100,width:100,height:100,x:0,y:0,rot:0,flipH:1,flipV:1};
+
 const $=id=>document.getElementById(id);
-function labels(){['scale','width','height'].forEach(k=>$(k+'O').textContent=s[k]+'%');$('xO').textContent=s.x;$('yO').textContent=s.y;$('rotO').textContent=s.rot+'°';}
-function fit(mode){if(!photo)return;let a=OPEN.w/photo.naturalWidth,b=OPEN.h/photo.naturalHeight;base=mode==='contain'?Math.min(a,b):Math.max(a,b);s.scale=100;s.width=100;s.height=100;s.x=0;s.y=0;s.rot=0;['scale','width','height'].forEach(k=>$(k).value=100);['x','y','rot'].forEach(k=>$(k).value=0);labels();draw();}
-function resetAll(){s={scale:100,width:100,height:100,x:0,y:0,rot:0,fh:1,fv:1};['scale','width','height'].forEach(k=>$(k).value=100);['x','y','rot'].forEach(k=>$(k).value=0);labels();draw();}
-function draw(){ctx.clearRect(0,0,W,H);if(photo){let sc=base*s.scale/100, sx=sc*s.width/100*s.fh, sy=sc*s.height/100*s.fv,cx=OPEN.x+OPEN.w/2+s.x,cy=OPEN.y+OPEN.h/2+s.y;let t=document.createElement('canvas');t.width=W;t.height=H;let q=t.getContext('2d');q.save();q.translate(cx,cy);q.rotate(s.rot*Math.PI/180);q.scale(sx,sy);q.drawImage(photo,-photo.naturalWidth/2,-photo.naturalHeight/2);q.restore();q.globalCompositeOperation='destination-in';q.drawImage(mask,0,0,W,H);ctx.drawImage(t,0,0)}ctx.drawImage(frame,0,0,W,H);}
-$('file').onchange=e=>{let f=e.target.files[0];if(!f)return;let u=URL.createObjectURL(f);photo=new Image();photo.onload=()=>{fit('cover');$('status').textContent='Đã tải: '+f.name+' — vùng ảnh được cắt đúng theo mask trung tâm.';URL.revokeObjectURL(u)};photo.src=u};
-$('scale').oninput=e=>{s.scale=+e.target.value;labels();draw()};$('width').oninput=e=>{s.width=+e.target.value;if($('lock').checked){s.height=s.width;$('height').value=s.height}labels();draw()};$('height').oninput=e=>{s.height=+e.target.value;if($('lock').checked){s.width=s.height;$('width').value=s.width}labels();draw()};$('x').oninput=e=>{s.x=+e.target.value;labels();draw()};$('y').oninput=e=>{s.y=+e.target.value;labels();draw()};$('rot').oninput=e=>{s.rot=+e.target.value;labels();draw()};
-function flipH(){s.fh*=-1;draw()} function flipV(){s.fv*=-1;draw()}
-function downloadPNG(){if(!photo){alert('Bạn chưa tải ảnh lên.');return}let a=document.createElement('a');a.download='an-tinh-khung-anh.png';a.href=c.toDataURL('image/png');a.click()}
-Promise.all([new Promise(r=>mask.onload=r),new Promise(r=>frame.onload=r)]).then(draw);labels();
+
+function loadImage(src){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>resolve(img);
+    img.onerror=()=>reject(new Error("Không thể tải "+src));
+    img.src=src;
+    if(img.complete && img.naturalWidth>0) resolve(img);
+  });
+}
+
+function updateLabels(){
+  $("scaleO").textContent=state.scale+"%";
+  $("widthO").textContent=state.width+"%";
+  $("heightO").textContent=state.height+"%";
+  $("xO").textContent=state.x;
+  $("yO").textContent=state.y;
+  $("rotO").textContent=state.rot+"°";
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  // Nếu chưa có ảnh, vẫn vẽ KHUNG ngay lập tức.
+  if(photo && maskImg){
+    const sc=baseScale*state.scale/100;
+    const sx=sc*state.width/100*state.flipH;
+    const sy=sc*state.height/100*state.flipV;
+    const cx=OPEN.x+OPEN.w/2+Number(state.x);
+    const cy=OPEN.y+OPEN.h/2+Number(state.y);
+
+    const temp=document.createElement("canvas");
+    temp.width=W; temp.height=H;
+    const t=temp.getContext("2d");
+
+    t.save();
+    t.translate(cx,cy);
+    t.rotate(state.rot*Math.PI/180);
+    t.scale(sx,sy);
+    t.drawImage(photo,-photo.naturalWidth/2,-photo.naturalHeight/2);
+    t.restore();
+
+    // Cắt ảnh bằng ĐÚNG mask trung tâm.
+    t.globalCompositeOperation="destination-in";
+    t.drawImage(maskImg,0,0,W,H);
+    t.globalCompositeOperation="source-over";
+    ctx.drawImage(temp,0,0);
+  }
+
+  if(frameImg) ctx.drawImage(frameImg,0,0,W,H);
+}
+
+function fit(mode){
+  if(!photo)return;
+  const sx=OPEN.w/photo.naturalWidth;
+  const sy=OPEN.h/photo.naturalHeight;
+  baseScale=(mode==="contain")?Math.min(sx,sy):Math.max(sx,sy);
+  state.scale=100;state.width=100;state.height=100;state.x=0;state.y=0;state.rot=0;
+  $("scale").value=100;$("width").value=100;$("height").value=100;
+  $("x").value=0;$("y").value=0;$("rot").value=0;
+  updateLabels();draw();
+}
+
+function resetAll(){
+  state={scale:100,width:100,height:100,x:0,y:0,rot:0,flipH:1,flipV:1};
+  ["scale","width","height"].forEach(k=>$(k).value=100);
+  ["x","y","rot"].forEach(k=>$(k).value=0);
+  if(photo)fit("cover");else{updateLabels();draw();}
+}
+
+$("file").addEventListener("change",e=>{
+  const file=e.target.files[0];
+  if(!file)return;
+  $("loading").style.display="block";
+  const url=URL.createObjectURL(file);
+  loadImage(url).then(img=>{
+    photo=img;
+    $("loading").style.display="none";
+    $("status").textContent="Đã tải: "+file.name+" — ảnh đang được cắt đúng theo mask trung tâm.";
+    fit("cover");
+    URL.revokeObjectURL(url);
+  }).catch(err=>{
+    $("loading").style.display="none";
+    $("status").textContent="Không thể đọc ảnh này.";
+    console.error(err);
+  });
+});
+
+$("scale").oninput=e=>{state.scale=+e.target.value;updateLabels();draw()};
+$("width").oninput=e=>{state.width=+e.target.value;if($("lock").checked){state.height=state.width;$("height").value=state.height}updateLabels();draw()};
+$("height").oninput=e=>{state.height=+e.target.value;if($("lock").checked){state.width=state.height;$("width").value=state.width}updateLabels();draw()};
+$("x").oninput=e=>{state.x=+e.target.value;updateLabels();draw()};
+$("y").oninput=e=>{state.y=+e.target.value;updateLabels();draw()};
+$("rot").oninput=e=>{state.rot=+e.target.value;updateLabels();draw()};
+$("fit").onclick=()=>fit("cover");
+$("contain").onclick=()=>fit("contain");
+$("reset").onclick=resetAll;
+$("flipH").onclick=()=>{state.flipH*=-1;draw()};
+$("flipV").onclick=()=>{state.flipV*=-1;draw()};
+$("clear").onclick=()=>{
+  photo=null;$("file").value="";$("status").textContent="Đã xóa ảnh. Khung vẫn hiển thị.";
+  draw();
+};
+$("download").onclick=()=>{
+  if(!photo){alert("Bạn chưa tải hình lên.");return;}
+  canvas.toBlob(blob=>{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download="an-tinh-khung-anh.png";
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  },"image/png");
+};
+
+async function start(){
+  try{
+    // Tải asset bằng Promise đúng cách, kể cả khi GitHub/browser đã cache.
+    [frameImg,maskImg]=await Promise.all([
+      loadImage("assets/frame.png"),
+      loadImage("assets/mask.png")
+    ]);
+    $("status").textContent="Khung đã sẵn sàng. Hãy tải hình lên.";
+    draw();
+  }catch(e){
+    $("status").textContent="Lỗi tải khung. Hãy kiểm tra thư mục assets trên GitHub.";
+    console.error(e);
+  }
+}
+updateLabels();
+start();
 </script>
-</body></html>
+</body>
+</html>
