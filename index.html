@@ -78,7 +78,7 @@ button:hover{background:#ffefca}
 <div id="downloadArea" style="display:none;margin-top:10px;padding:12px;background:#fff8e9;border:1px solid #dfc486;border-radius:9px">
 <div style="font-size:12px;margin-bottom:8px"><b>File PNG đã được tạo.</b> Nếu trình duyệt không tự lưu, hãy bấm nút bên dưới:</div><a id="downloadLink" href="#" download="an-tinh-khung-anh.png" style="display:inline-block;padding:8px 10px;background:#a96d18;color:#fff;border-radius:7px;text-decoration:none;font-weight:700">⬇ TẢI FILE PNG</a></div>
 <p class="small"><b>Tải xuống:</b> trình duyệt sẽ lưu file vào thư mục <b>Downloads / Tải xuống</b> hoặc hỏi vị trí lưu tùy cài đặt.</p>
-<div class="help">Nếu bấm mà trình duyệt chặn tải tự động, nút sẽ mở ảnh PNG để bạn nhấn Ctrl+S lưu lại.</div>
+<div class="help">Nếu trình duyệt chặn tải tự động, ảnh PNG sẽ được mở để bạn lưu trực tiếp.</div>
 </div>
 </div>
 </div>
@@ -249,15 +249,27 @@ function makeVisibleIOSPreview(dataURL) {
   share.onclick = async () => {
     try {
       const file = dataURLToFile(dataURL, 'an-tinh-khung-anh.png');
-      if (navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))) {
-        await navigator.share({title:'An Tịnh - Khung ảnh', files:[file]});
-        showDownloadMessage('Đã mở bảng Chia sẻ. Hãy chọn <b>Lưu hình ảnh</b> hoặc <b>Lưu vào Tệp</b>.');
+      const canFileShare = !!(navigator.share && navigator.canShare &&
+        navigator.canShare({files:[file]}));
+      if (canFileShare) {
+        await navigator.share({
+          title: 'An Tịnh - Khung ảnh',
+          text: 'Khung ảnh An Tịnh',
+          files: [file]
+        });
+        showDownloadMessage('Đã mở bảng Chia sẻ. Chọn <b>Lưu hình ảnh</b> hoặc <b>Lưu vào Tệp</b>.');
+      } else if (navigator.share) {
+        await navigator.share({
+          title: 'An Tịnh - Khung ảnh',
+          text: 'Khung ảnh An Tịnh'
+        });
+        showDownloadMessage('Đã mở bảng Chia sẻ. Bạn có thể lưu ảnh từ màn hình xem ảnh.');
       } else {
-        showDownloadMessage('iPhone này không hỗ trợ chia sẻ file trực tiếp. Hãy nhấn giữ vào ảnh để lưu.', false);
+        showDownloadMessage('Hãy nhấn giữ vào ảnh → <b>Lưu vào Ảnh</b>.');
       }
     } catch (e) {
       if (e && e.name !== 'AbortError') {
-        showDownloadMessage('Chưa lưu được tự động. Hãy nhấn giữ vào ảnh và chọn <b>Lưu vào Ảnh</b>.', false);
+        showDownloadMessage('Hãy nhấn giữ vào ảnh → <b>Lưu vào Ảnh</b>.', false);
       }
     }
   };
@@ -308,8 +320,9 @@ async function downloadPNG() {
   }
 }
 
-if (typeof downloadBtn !== 'undefined' && downloadBtn) {
-  downloadBtn.addEventListener('click', downloadPNG);
+const downloadBtn = document.getElementById("download");
+if (downloadBtn) {
+  downloadBtn.addEventListener("click", downloadPNG);
 }
 </script>
 </body>
