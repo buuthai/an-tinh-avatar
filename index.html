@@ -161,76 +161,64 @@ $("file").onchange=e=>{
 };
 
 async function downloadPNG(){
- if(!photo){alert("Bạn chưa tải hình lên.");return;}
+ if(!photo){
+   $("status").textContent="❌ LỖI: Bạn chưa tải hình lên.";
+   alert("Bạn chưa tải hình lên.");
+   return;
+ }
 
  const button=$("download");
  const area=$("downloadArea");
- const link=$("downloadLink");
  button.disabled=true;
- button.textContent="⏳ ĐANG TẠO FILE...";
+ button.textContent="⏳ ĐANG CHUẨN BỊ FILE...";
+ area.style.display="none";
 
  try{
    draw();
+   await new Promise(resolve=>requestAnimationFrame(resolve));
 
    const blob=await new Promise((resolve,reject)=>{
-     canvas.toBlob(b=>b ? resolve(b) : reject(new Error("Không tạo được PNG")), "image/png");
+     canvas.toBlob(function(result){
+       if(result && result.size>0) resolve(result);
+       else reject(new Error("Không tạo được file PNG."));
+     },"image/png");
    });
 
-   // Cách 1: Chrome/Edge hỗ trợ hộp thoại lưu file.
-   // Người dùng tự chọn nơi lưu nên không phụ thuộc thư mục Downloads.
-   if(window.showSaveFilePicker){
-     try{
-       const handle=await window.showSaveFilePicker({
-         suggestedName:"an-tinh-khung-anh.png",
-         types:[{
-           description:"Ảnh PNG",
-           accept:{"image/png":[".png"]}
-         }]
-       });
-       const writable=await handle.createWritable();
-       await writable.write(blob);
-       await writable.close();
+   // Chrome/Edge desktop: cho người dùng chọn chính xác thư mục và tên file.
+   if(window.isSecureContext && "showSaveFilePicker" in window){
+     const handle=await window.showSaveFilePicker({
+       suggestedName:"an-tinh-khung-anh.png",
+       types:[{description:"Ảnh PNG",accept:{"image/png":[".png"]}}]
+     });
 
-       $("status").textContent="Đã lưu thành công file an-tinh-khung-anh.png vào vị trí bạn vừa chọn.";
-       area.style.display="none";
-       return;
-     }catch(err){
-       // Người dùng bấm Cancel thì không báo lỗi; nếu API bị từ chối,
-       // tiếp tục xuống phương án tải dự phòng.
-       if(err && err.name==="AbortError"){
-         $("status").textContent="Bạn đã hủy chọn nơi lưu file.";
-         return;
-       }
-     }
+     const writable=await handle.createWritable();
+     await writable.write(blob);
+     await writable.close();
+
+     $("status").textContent="✅ TẢI THÀNH CÔNG! File đã được lưu vào nơi bạn vừa chọn.";
+     button.textContent="✅ TẢI THÀNH CÔNG";
+     setTimeout(()=>button.textContent="⬇ TẢI HÌNH PNG",2500);
+     return;
    }
 
-   // Cách 2: tải bằng thẻ <a download>.
-   // Đồng thời hiện link rõ ràng để người dùng bấm nếu trình duyệt
-   // không cho phép click tự động.
-   const url=URL.createObjectURL(blob);
-   link.href=url;
-   link.download="an-tinh-khung-anh.png";
-   area.style.display="block";
-
-   const temp=document.createElement("a");
-   temp.href=url;
-   temp.download="an-tinh-khung-anh.png";
-   temp.style.position="fixed";
-   temp.style.left="-9999px";
-   document.body.appendChild(temp);
-   temp.click();
-   temp.remove();
-
-   $("status").textContent="Đã tạo file PNG. Nếu file chưa tự tải, hãy bấm nút «TẢI FILE PNG» ngay bên dưới.";
-   setTimeout(()=>URL.revokeObjectURL(url),60000);
+   throw new Error("Trình duyệt hiện tại không hỗ trợ chọn nơi lưu file. Hãy dùng Chrome hoặc Microsoft Edge trên máy tính và mở GitHub Pages bằng HTTPS.");
 
  }catch(err){
-   console.error(err);
-   $("status").textContent="Không thể tạo file PNG. Hãy thử lại hoặc bấm tải file dự phòng.";
-   alert("Không thể tạo file PNG. Vui lòng thử lại.");
+   console.error("Download error:",err);
+
+   if(err && err.name==="AbortError"){
+     $("status").textContent="⚠️ Bạn đã hủy thao tác. File chưa được tải xuống.";
+     return;
+   }
+
+   const msg=err && err.message ? err.message : "Không xác định được lỗi.";
+   $("status").textContent="❌ TẢI KHÔNG THÀNH CÔNG: "+msg;
+   alert("❌ Tải hình không thành công.\n\n"+msg);
  }finally{
    button.disabled=false;
-   button.textContent="⬇ TẢI HÌNH PNG";
+   if(button.textContent!=="✅ TẢI THÀNH CÔNG"){
+     button.textContent="⬇ TẢI HÌNH PNG";
+   }
  }
 }
 
