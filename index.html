@@ -182,15 +182,9 @@ function isIOS(){
 }
 
 
-function dataURLToFile(dataURL, filename) {
-  const parts = dataURL.split(',');
-  const mime = parts[0].match(/:(.*?);/)[1];
-  const binary = atob(parts[1]);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-  return new File([bytes], filename, { type: mime });
-}
+
+let lastPNGBlob = null;
+let lastPNGURL = null;
 
 function showDownloadMessage(msg, ok = true) {
   let box = document.getElementById('downloadMessage');
@@ -207,114 +201,145 @@ function showDownloadMessage(msg, ok = true) {
   box.innerHTML = msg;
   box.style.background = ok ? '#2f6b3a' : '#8b2f2f';
   clearTimeout(box._timer);
-  box._timer = setTimeout(() => box.remove(), 7000);
+  box._timer = setTimeout(() => box.remove(), 8000);
 }
 
-function makeVisibleIOSPreview(dataURL) {
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function openIOSImage(blob) {
+  if (lastPNGURL) URL.revokeObjectURL(lastPNGURL);
+  lastPNGURL = URL.createObjectURL(blob);
+
+  // A real Blob URL is much more reliable on iOS Safari than a huge data: URL.
+  const a = document.createElement('a');
+  a.href = lastPNGURL;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.textContent = 'MỞ ẢNH PNG';
+  a.style.cssText =
+    'display:inline-block;margin-top:12px;padding:13px 20px;border-radius:10px;' +
+    'background:#b77a18;color:#fff;text-decoration:none;font-size:17px;font-weight:700;';
+  document.body.appendChild(a);
+  a.click();
+
+  // Also create an in-page fallback so nothing depends on popup behavior.
   let modal = document.getElementById('iosSaveModal');
   if (modal) modal.remove();
 
   modal = document.createElement('div');
   modal.id = 'iosSaveModal';
   modal.style.cssText =
-    'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:100000;' +
+    'position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:100000;' +
     'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-    'padding:18px;box-sizing:border-box;overflow:auto;';
+    'padding:16px;box-sizing:border-box;overflow:auto;';
 
   const title = document.createElement('div');
-  title.textContent = 'Ảnh PNG đã tạo thành công';
-  title.style.cssText = 'color:#fff;font-size:20px;font-weight:700;margin:0 0 8px;text-align:center;';
+  title.textContent = 'ẢNH PNG ĐÃ SẴN SÀNG';
+  title.style.cssText =
+    'color:#fff;font-size:20px;font-weight:700;margin-bottom:8px;text-align:center;';
 
   const help = document.createElement('div');
   help.innerHTML =
-    'Trên iPhone: <b>nhấn giữ vào ảnh</b> → chọn <b>Lưu vào Ảnh</b>.<br>' +
-    'Hoặc bấm nút <b>Chia sẻ</b> của Safari → <b>Lưu hình ảnh</b>.';
+    'Nếu ảnh đã mở ở tab mới: nhấn <b>Chia sẻ</b> → <b>Lưu hình ảnh</b>.<br>' +
+    'Nếu chưa mở: nhấn giữ trực tiếp vào ảnh bên dưới → <b>Lưu vào Ảnh</b>.';
   help.style.cssText =
-    'color:#eee;font-size:15px;line-height:1.5;text-align:center;margin:0 0 14px;';
+    'color:#eee;font-size:15px;line-height:1.5;text-align:center;margin-bottom:12px;';
 
   const img = document.createElement('img');
-  img.src = dataURL;
-  img.alt = 'Khung ảnh An Tịnh PNG';
+  img.src = lastPNGURL;
+  img.alt = 'Khung ảnh An Tịnh';
   img.style.cssText =
-    'display:block;max-width:94vw;max-height:68vh;width:auto;height:auto;' +
-    'object-fit:contain;background:transparent;border-radius:8px;';
+    'max-width:94vw;max-height:67vh;width:auto;height:auto;object-fit:contain;';
 
-  const row = document.createElement('div');
-  row.style.cssText = 'display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;justify-content:center;';
+  const actions = document.createElement('div');
+  actions.style.cssText =
+    'display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:14px;';
+
+  const open = document.createElement('a');
+  open.href = lastPNGURL;
+  open.target = '_blank';
+  open.rel = 'noopener';
+  open.textContent = 'MỞ ẢNH PNG';
+  open.style.cssText =
+    'display:inline-block;padding:12px 17px;border-radius:10px;background:#c28a2b;' +
+    'color:#fff;text-decoration:none;font-size:16px;font-weight:700;';
 
   const share = document.createElement('button');
-  share.textContent = '↗ Chia sẻ / Lưu ảnh';
+  share.textContent = '↗ CHIA SẺ / LƯU';
   share.style.cssText =
-    'border:0;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:700;cursor:pointer;';
+    'border:0;border-radius:10px;padding:12px 17px;font-size:16px;font-weight:700;cursor:pointer;';
   share.onclick = async () => {
     try {
-      const file = dataURLToFile(dataURL, 'an-tinh-khung-anh.png');
-      const canFileShare = !!(navigator.share && navigator.canShare &&
-        navigator.canShare({files:[file]}));
-      if (canFileShare) {
+      const file = new File([blob], 'an-tinh-khung-anh.png', {type:'image/png'});
+      if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
         await navigator.share({
-          title: 'An Tịnh - Khung ảnh',
-          text: 'Khung ảnh An Tịnh',
-          files: [file]
+          title:'An Tịnh - Khung ảnh',
+          files:[file]
         });
-        showDownloadMessage('Đã mở bảng Chia sẻ. Chọn <b>Lưu hình ảnh</b> hoặc <b>Lưu vào Tệp</b>.');
-      } else if (navigator.share) {
-        await navigator.share({
-          title: 'An Tịnh - Khung ảnh',
-          text: 'Khung ảnh An Tịnh'
-        });
-        showDownloadMessage('Đã mở bảng Chia sẻ. Bạn có thể lưu ảnh từ màn hình xem ảnh.');
+        showDownloadMessage('Đã mở bảng Chia sẻ. Chọn <b>Lưu hình ảnh</b>.');
       } else {
-        showDownloadMessage('Hãy nhấn giữ vào ảnh → <b>Lưu vào Ảnh</b>.');
+        showDownloadMessage('Hãy nhấn giữ ảnh → <b>Lưu vào Ảnh</b>.');
       }
-    } catch (e) {
-      if (e && e.name !== 'AbortError') {
-        showDownloadMessage('Hãy nhấn giữ vào ảnh → <b>Lưu vào Ảnh</b>.', false);
+    } catch(e) {
+      if (!e || e.name !== 'AbortError') {
+        showDownloadMessage('Hãy nhấn giữ ảnh → <b>Lưu vào Ảnh</b>.', false);
       }
     }
   };
 
   const close = document.createElement('button');
-  close.textContent = 'Đóng';
+  close.textContent = 'ĐÓNG';
   close.style.cssText =
-    'border:0;border-radius:10px;padding:12px 16px;font-size:16px;cursor:pointer;';
+    'border:0;border-radius:10px;padding:12px 17px;font-size:16px;cursor:pointer;';
   close.onclick = () => modal.remove();
 
-  row.appendChild(share);
-  row.appendChild(close);
+  actions.appendChild(open);
+  actions.appendChild(share);
+  actions.appendChild(close);
   modal.appendChild(title);
   modal.appendChild(help);
   modal.appendChild(img);
-  modal.appendChild(row);
+  modal.appendChild(actions);
   document.body.appendChild(modal);
 }
 
-async function downloadPNG() {
+function downloadPNG() {
   try {
-    const dataURL = canvas.toDataURL('image/png');
-    const filename = 'an-tinh-khung-anh.png';
+    // toBlob creates a real PNG file. iPhone Safari handles Blob URLs and
+    // Share Sheet much better than large data URLs.
+    canvas.toBlob(function(blob) {
+      if (!blob) {
+        showDownloadMessage('Không thể tạo file PNG. Vui lòng thử lại.', false);
+        return;
+      }
 
-    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      lastPNGBlob = blob;
 
-    if (isiOS) {
-      // Never attempt to create/find a filesystem directory on iPhone.
-      // Show the generated PNG inside the page and let iOS handle saving/sharing.
-      makeVisibleIOSPreview(dataURL);
-      showDownloadMessage('Đã tạo PNG. Hãy nhấn giữ vào ảnh để <b>Lưu vào Ảnh</b>.');
-      return;
-    }
+      if (isIOSDevice()) {
+        openIOSImage(blob);
+        showDownloadMessage(
+          'Đã tạo PNG. Trên iPhone, chọn <b>MỞ ẢNH PNG</b> rồi <b>Chia sẻ → Lưu hình ảnh</b>.'
+        );
+        return;
+      }
 
-    const a = document.createElement('a');
-    a.href = dataURL;
-    a.download = filename;
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+      if (lastPNGURL) URL.revokeObjectURL(lastPNGURL);
+      lastPNGURL = URL.createObjectURL(blob);
 
-    showDownloadMessage('Đã tạo và tải hình PNG. Kiểm tra thư mục Tải xuống.');
-  } catch (err) {
+      const a = document.createElement('a');
+      a.href = lastPNGURL;
+      a.download = 'an-tinh-khung-anh.png';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      showDownloadMessage('Đã tạo và tải hình PNG. Kiểm tra thư mục Tải xuống.');
+    }, 'image/png');
+  } catch(err) {
     console.error(err);
     showDownloadMessage('Không thể tạo hình PNG. Vui lòng thử lại.', false);
   }
@@ -323,6 +348,8 @@ async function downloadPNG() {
 const downloadBtn = document.getElementById("download");
 if (downloadBtn) {
   downloadBtn.addEventListener("click", downloadPNG);
+}
+
 }
 </script>
 </body>
