@@ -76,9 +76,7 @@ button:hover{background:#ffefca}
 <div class="sec">
 <button id="download" class="primary">⬇ TẢI HÌNH PNG</button>
 <div id="downloadArea" style="display:none;margin-top:10px;padding:12px;background:#fff8e9;border:1px solid #dfc486;border-radius:9px">
-<div style="font-size:12px;margin-bottom:8px"><b>File PNG đã được tạo.</b> Nếu trình duyệt không tự lưu, hãy bấm nút bên dưới:</div>
-<a id="downloadLink" href="#" download="an-tinh-khung-anh.png" style="display:block;text-align:center;padding:10px;background:#a96d18;color:#fff;border-radius:8px;text-decoration:none;font-weight:700">⬇ LƯU FILE PNG VÀO MÁY</a>
-</div><div id="downloadArea" style="display:none;margin-top:9px;padding:10px;background:#fff8e9;border:1px solid #e2c98f;border-radius:8px;font-size:12px"><div style="margin-bottom:6px"><b>File đã sẵn sàng.</b> Nếu máy không tự tải, hãy bấm:</div><a id="downloadLink" href="#" download="an-tinh-khung-anh.png" style="display:inline-block;padding:8px 10px;background:#a96d18;color:#fff;border-radius:7px;text-decoration:none;font-weight:700">⬇ TẢI FILE PNG</a></div>
+<div style="font-size:12px;margin-bottom:8px"><b>File PNG đã được tạo.</b> Nếu trình duyệt không tự lưu, hãy bấm nút bên dưới:</div><a id="downloadLink" href="#" download="an-tinh-khung-anh.png" style="display:inline-block;padding:8px 10px;background:#a96d18;color:#fff;border-radius:7px;text-decoration:none;font-weight:700">⬇ TẢI FILE PNG</a></div>
 <p class="small"><b>Tải xuống:</b> trình duyệt sẽ lưu file vào thư mục <b>Downloads / Tải xuống</b> hoặc hỏi vị trí lưu tùy cài đặt.</p>
 <div class="help">Nếu bấm mà trình duyệt chặn tải tự động, nút sẽ mở ảnh PNG để bạn nhấn Ctrl+S lưu lại.</div>
 </div>
@@ -95,6 +93,20 @@ const MASK='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABOYAAATmCAAAAACgl/H2AA
 const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");
 let frame=new Image(),photo=null,base=1;
 let state={scale:100,w:100,h:100,x:0,y:0,r:0,fh:1,fv:1};
+
+// Tải khung GỐC từ dữ liệu nhúng trong file HTML.
+// Không phụ thuộc đường dẫn frame.png nên GitHub Pages/điện thoại
+// vẫn hiển thị khung ngay cả khi đường dẫn tương đối bị lỗi.
+frame.onload=()=>{
+  const st=document.getElementById("status");
+  if(st) st.textContent="Đã tải khung An Tịnh.";
+  draw();
+};
+frame.onerror=()=>{
+  const st=document.getElementById("status");
+  if(st) st.textContent="Không tải được khung. Vui lòng tải lại trang.";
+};
+frame.src=FRAME;
 
 function load(src){
  return new Promise((resolve,reject)=>{
