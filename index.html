@@ -2,162 +2,234 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#6d451d">
-<title>Tạo Ảnh Cùng An Tịnh</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>An Tịnh — Khung ảnh</title>
 <style>
+:root {
+  --gold:#d6a84a;
+  --gold2:#f3d27a;
+  --brown:#3b2415;
+  --panel:#fffaf0;
+}
 *{box-sizing:border-box}
-body{margin:0;background:#f2ede5;color:#3d2815;font-family:Arial,sans-serif}
-.app{max-width:900px;margin:auto;padding:16px}
-h1{text-align:center;margin:4px 0 6px;font-size:24px}
-.note{text-align:center;margin:0 0 15px;color:#6b5439}
-.panel{background:#fff;border:1px solid #dbc49c;border-radius:14px;padding:14px;box-shadow:0 5px 20px rgba(0,0,0,.08)}
-.upload{display:block;text-align:center;background:#76501f;color:#fff;padding:12px;border-radius:9px;cursor:pointer;font-weight:600}
-.upload input{display:none}
-.controls{display:grid;gap:11px;margin-top:13px}
-.slider{display:grid;grid-template-columns:130px 1fr 58px;gap:8px;align-items:center;font-size:13px}
-input[type=range]{width:100%;accent-color:#9b6a25}
-.stage{position:relative;width:min(96vw,1254px);aspect-ratio:1/1;margin:16px auto;background:#ddd;overflow:hidden}
-#photo,#frame{position:absolute;inset:0;width:100%;height:100%;display:block}
-#photo{z-index:1}#frame{z-index:2;pointer-events:none}
-.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-button,.download-link{border:1px solid #ad7b32;background:#fff4dc;color:#55350e;padding:11px 15px;border-radius:9px;cursor:pointer;font-size:15px;text-decoration:none}
-#download{background:#7a4d19;color:white}
-#status{margin-top:10px;text-align:center;min-height:22px;font-size:14px}
-.saved{display:none;margin-top:9px;text-align:center}
-.saved.show{display:block}
-.saved a{font-weight:700;color:#704713}
-.small{font-size:12px;text-align:center;color:#786957;margin-top:10px;line-height:1.5}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:linear-gradient(135deg,#f5ead7,#fffaf0);color:#2b2119}
+.app{max-width:1250px;margin:0 auto;padding:22px}
+header{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:18px}
+h1{margin:0;font-size:25px;color:#5a361d}
+.sub{margin:4px 0 0;color:#705b48;font-size:14px}
+.grid{display:grid;grid-template-columns:minmax(360px,1fr) 340px;gap:20px;align-items:start}
+.card{background:rgba(255,255,255,.88);border:1px solid #ead9b9;border-radius:18px;box-shadow:0 10px 35px rgba(83,51,20,.12)}
+.preview{padding:16px}
+.canvas-wrap{position:relative;width:100%;aspect-ratio:1/1;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 50%/24px 24px;border-radius:12px;overflow:hidden;display:grid;place-items:center}
+canvas{width:100%;height:100%;display:block}
+.controls{padding:18px}
+.group{border-bottom:1px solid #eadfcd;padding:0 0 15px;margin:0 0 15px}
+.group:last-child{border-bottom:0;margin-bottom:0}
+label{display:flex;justify-content:space-between;gap:12px;font-size:13px;font-weight:650;margin:10px 0 6px}
+input[type=file]{width:100%;font-size:13px}
+input[type=range]{width:100%;accent-color:#a97722}
+input[type=number]{width:92px;padding:7px 8px;border:1px solid #d9c8ab;border-radius:8px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button{border:1px solid #cda85e;background:#fff8e9;color:#5b391b;border-radius:9px;padding:9px 11px;font-weight:700;cursor:pointer}
+button:hover{background:#fff0ca}
+.primary{width:100%;padding:12px;background:linear-gradient(135deg,#a96f1c,#e3b65a);color:white;border:0;font-size:15px}
+.danger{background:#fff1ee;border-color:#e7b4aa;color:#8b382a}
+.small{font-size:12px;color:#776654;line-height:1.45}
+.badge{display:inline-block;background:#f7e7bf;color:#6b481d;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800}
+.switch{display:flex;align-items:center;gap:8px;font-size:13px}
+.status{margin-top:10px;padding:9px 10px;background:#faf3e6;border-radius:9px;font-size:12px;color:#6d5944}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="app">
-<h1>Tạo Ảnh Cùng An Tịnh</h1>
-<p class="note">Ảnh khách sẽ phủ toàn bộ khung hình. Bạn có thể chỉnh kích thước và vị trí.</p>
-<div class="panel">
-<label class="upload">📷 TẢI ẢNH KHÁCH LÊN
-<input id="file" type="file" accept="image/jpeg,image/png,image/webp">
-</label>
+<header>
+  <div>
+    <h1>Khung ảnh An Tịnh</h1>
+    <div class="sub">Mask đã được tách trực tiếp từ vùng trong suốt trung tâm của mẫu gốc.</div>
+  </div>
+  <span class="badge">1254 × 1254 px</span>
+</header>
 
-<div class="controls">
-<div class="slider"><span>Phóng to / thu nhỏ</span><input id="zoom" type="range" min="50" max="250" value="100"><output id="z">100%</output></div>
-<div class="slider"><span>Dịch trái / phải</span><input id="x" type="range" min="-400" max="400" value="0"><output id="xo">0</output></div>
-<div class="slider"><span>Dịch lên / xuống</span><input id="y" type="range" min="-400" max="400" value="0"><output id="yo">0</output></div>
-</div>
+<div class="grid">
+  <section class="card preview">
+    <div class="canvas-wrap"><canvas id="canvas" width="1254" height="1254"></canvas></div>
+    <div class="status" id="status">Chưa tải ảnh. Hãy chọn ảnh để bắt đầu.</div>
+  </section>
 
-<div class="stage">
-<canvas id="photo" width="1254" height="1254"></canvas>
-<img id="frame" src="an-tinh-frame.png" alt="Khung An Tịnh">
-</div>
+  <aside class="card controls">
+    <div class="group">
+      <label>1. Tải ảnh lên</label>
+      <input id="file" type="file" accept="image/*">
+      <p class="small">Ảnh chỉ được xử lý trên trình duyệt của bạn; không cần máy chủ.</p>
+    </div>
 
-<div class="actions">
-<button id="reset" type="button">↺ ĐẶT LẠI</button>
-<button id="download" type="button">⬇ TẢI XUỐNG</button>
-<button id="share" type="button">📤 CHIA SẺ</button>
-</div>
-<div id="status"></div>
-<div id="saved" class="saved">
-Ảnh đã tải xuống: <a id="downloaded" href="#" download="an-tinh-khung-anh.png">an-tinh-khung-anh.png</a>
-</div>
-<div class="small">
-Trên máy tính, ảnh được lưu vào thư mục <b>Downloads / Tải xuống</b> theo cài đặt trình duyệt.
-Trên điện thoại, nút Chia sẻ có thể mở menu <b>Lưu vào Ảnh / Photos</b> nếu thiết bị hỗ trợ.
-</div>
+    <div class="group">
+      <label>Phóng to / thu nhỏ <output id="scaleOut">100%</output></label>
+      <input id="scale" type="range" min="10" max="250" value="100">
+      <div class="row">
+        <button id="fit">Vừa khung</button>
+        <button id="contain">Vừa đủ ảnh</button>
+        <button id="reset">Đặt lại</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <label>Chiều rộng <output id="widthOut">100%</output></label>
+      <input id="width" type="range" min="10" max="250" value="100">
+      <label>Chiều cao <output id="heightOut">100%</output></label>
+      <input id="height" type="range" min="10" max="250" value="100">
+      <label class="switch"><input id="lock" type="checkbox" checked> Khóa tỷ lệ chiều rộng / chiều cao</label>
+    </div>
+
+    <div class="group">
+      <label>Vị trí ngang <output id="xOut">0</output></label>
+      <input id="x" type="range" min="-600" max="600" value="0">
+      <label>Vị trí dọc <output id="yOut">0</output></label>
+      <input id="y" type="range" min="-600" max="600" value="0">
+    </div>
+
+    <div class="group">
+      <label>Xoay <output id="rotateOut">0°</output></label>
+      <input id="rotate" type="range" min="-180" max="180" value="0">
+      <div class="row">
+        <button id="flipH">Lật ngang</button>
+        <button id="flipV">Lật dọc</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <label>Chất lượng tải xuống</label>
+      <div class="row">
+        <button id="download" class="primary">⬇ TẢI KHUNG ẢNH PNG</button>
+      </div>
+      <p class="small">PNG giữ nguyên nền trong suốt bên ngoài khung.</p>
+      <p class="small"><b>Vị trí tải về:</b> trình duyệt sẽ lưu file vào thư mục <b>Downloads / Tải xuống</b> theo cài đặt của máy. Nếu Chrome hỏi nơi lưu, bạn có thể chọn thư mục bất kỳ.</p>
+    </div>
+
+    <div class="group">
+      <button id="clear" class="danger">Xóa ảnh đã tải</button>
+    </div>
+  </aside>
 </div>
 </div>
 
 <script>
-const W=1254,H=1254;
-const c=document.getElementById('photo'),ctx=c.getContext('2d');
-const file=document.getElementById('file');
-const zoom=document.getElementById('zoom'),xs=document.getElementById('x'),ys=document.getElementById('y');
-const z=document.getElementById('z'),xo=document.getElementById('xo'),yo=document.getElementById('yo');
-const status=document.getElementById('status'),saved=document.getElementById('saved'),downloaded=document.getElementById('downloaded');
-let img=null,lastURL=null;
+const W=1254, H=1254;
+const OPEN={x:160, y:43, w:933, h:824};
+
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const maskImg=new Image();
+const frameImg=new Image();
+maskImg.src='assets/mask.png';
+frameImg.src='assets/frame.png';
+
+let photo=null;
+let state={scale:100,width:100,height:100,x:0,y:0,rotate:0,flipH:1,flipV:1};
+let baseScale=1;
+
+const $=id=>document.getElementById(id);
+function out(id,val){ $(id).textContent=val; }
+
+function updateLabels(){
+  out('scaleOut',state.scale+'%');
+  out('widthOut',state.width+'%');
+  out('heightOut',state.height+'%');
+  out('xOut',state.x);
+  out('yOut',state.y);
+  out('rotateOut',state.rotate+'°');
+}
+
+function fitMode(mode='cover'){
+  if(!photo) return;
+  const sx=OPEN.w/photo.naturalWidth;
+  const sy=OPEN.h/photo.naturalHeight;
+  baseScale = mode==='contain' ? Math.min(sx,sy) : Math.max(sx,sy);
+  state.scale=100; state.width=100; state.height=100; state.x=0; state.y=0; state.rotate=0;
+  $('scale').value=100; $('width').value=100; $('height').value=100;
+  $('x').value=0; $('y').value=0; $('rotate').value=0;
+  updateLabels(); draw();
+}
 
 function draw(){
- ctx.clearRect(0,0,W,H);
- ctx.fillStyle='#ddd';ctx.fillRect(0,0,W,H);
- if(!img)return;
+  ctx.clearRect(0,0,W,H);
+  if(photo){
+    const scale=baseScale*(state.scale/100);
+    const sx=scale*(state.width/100)*state.flipH;
+    const sy=scale*(state.height/100)*state.flipV;
+    const iw=photo.naturalWidth, ih=photo.naturalHeight;
+    const cx=OPEN.x+OPEN.w/2+Number(state.x);
+    const cy=OPEN.y+OPEN.h/2+Number(state.y);
 
- ctx.save();
- // Customer photo uses the ENTIRE frame, not a fixed circular/portrait crop.
- const scale=Math.max(W/img.width,H/img.height)*Number(zoom.value)/100;
- const dw=img.width*scale,dh=img.height*scale;
- ctx.drawImage(img,(W-dw)/2+Number(xs.value),(H-dh)/2+Number(ys.value),dw,dh);
- ctx.restore();
+    // Vẽ ảnh vào lớp tạm, sau đó dùng đúng mask pixel-for-pixel.
+    const temp=document.createElement('canvas');
+    temp.width=W; temp.height=H;
+    const t=temp.getContext('2d');
+    t.save();
+    t.translate(cx,cy);
+    t.rotate(state.rotate*Math.PI/180);
+    t.scale(sx,sy);
+    t.drawImage(photo,-iw/2,-ih/2);
+    t.restore();
 
- z.textContent=zoom.value+'%';
- xo.textContent=xs.value;
- yo.textContent=ys.value;
+    // destination-in: chỉ giữ lại phần trùng với mask.
+    t.globalCompositeOperation='destination-in';
+    t.drawImage(maskImg,0,0,W,H);
+    ctx.drawImage(temp,0,0);
+  }
+  // Frame luôn nằm trên cùng.
+  ctx.drawImage(frameImg,0,0,W,H);
 }
-draw();
-
-file.onchange=e=>{
- const f=e.target.files[0];if(!f)return;
- const u=URL.createObjectURL(f),i=new Image();
- status.textContent='Đang tải ảnh khách lên...';
- i.onload=()=>{
-  img=i;zoom.value=100;xs.value=0;ys.value=0;draw();
-  status.textContent='Đã tải ảnh khách. Ảnh đang phủ toàn bộ khung.';
-  URL.revokeObjectURL(u);
- };
- i.onerror=()=>{status.textContent='Không đọc được ảnh. Hãy chọn JPG, PNG hoặc WebP.';URL.revokeObjectURL(u)};
- i.src=u;
-};
-[zoom,xs,ys].forEach(e=>e.addEventListener('input',draw));
-document.getElementById('reset').onclick=()=>{zoom.value=100;xs.value=0;ys.value=0;draw()};
-
-function makeFinal(){
- return new Promise((resolve,reject)=>{
-  const out=document.createElement('canvas');out.width=W;out.height=H;
-  const o=out.getContext('2d');o.drawImage(c,0,0,W,H);
-  const f=new Image();
-  f.onload=()=>{o.drawImage(f,0,0,W,H);resolve(out)};
-  f.onerror=reject;f.src='an-tinh-frame.png';
- });
+function reset(){
+  state={scale:100,width:100,height:100,x:0,y:0,rotate:0,flipH:1,flipV:1};
+  ['scale','width','height','x','y','rotate'].forEach(id=>$(id).value=id==='scale'||id==='width'||id==='height'?100:0);
+  updateLabels(); draw();
 }
 
-document.getElementById('download').onclick=async()=>{
- if(!img){status.textContent='Vui lòng tải ảnh khách lên trước.';return}
- status.textContent='Đang tạo ảnh thành phẩm...';
- try{
-  const out=await makeFinal();
-  out.toBlob(blob=>{
-   if(lastURL)URL.revokeObjectURL(lastURL);
-   lastURL=URL.createObjectURL(blob);
-   downloaded.href=lastURL;
-   downloaded.download='an-tinh-khung-anh.png';
-   saved.classList.add('show');
-   const a=document.createElement('a');
-   a.href=lastURL;a.download='an-tinh-khung-anh.png';
-   document.body.appendChild(a);a.click();a.remove();
-   status.textContent='Đã tải xuống. Kiểm tra thư mục Downloads / Tải xuống.';
-  },'image/png');
- }catch(e){status.textContent='Không tạo được ảnh.'}
+$('file').addEventListener('change',e=>{
+  const f=e.target.files[0];
+  if(!f) return;
+  const url=URL.createObjectURL(f);
+  photo=new Image();
+  photo.onload=()=>{
+    fitMode('cover');
+    $('status').textContent='Đã tải ảnh: '+f.name+' — có thể kéo thanh để chỉnh kích thước, tỷ lệ và vị trí.';
+    URL.revokeObjectURL(url);
+  };
+  photo.src=url;
+});
+$('scale').oninput=e=>{state.scale=+e.target.value;updateLabels();draw();};
+$('width').oninput=e=>{
+  const v=+e.target.value, old=state.width;
+  state.width=v;
+  if($('lock').checked){state.height=v;$('height').value=v;}
+  updateLabels();draw();
 };
-
-document.getElementById('share').onclick=async()=>{
- if(!img){status.textContent='Vui lòng tải ảnh khách lên trước.';return}
- try{
-  const out=await makeFinal();
-  out.toBlob(async blob=>{
-   const f=new File([blob],'an-tinh-khung-anh.png',{type:'image/png'});
-   if(navigator.share && (!navigator.canShare || navigator.canShare({files:[f]}))){
-    await navigator.share({title:'Khung ảnh An Tịnh',files:[f]});
-    status.textContent='Đã mở menu chia sẻ của thiết bị.';
-   }else{
-    if(lastURL)URL.revokeObjectURL(lastURL);
-    lastURL=URL.createObjectURL(blob);
-    downloaded.href=lastURL;downloaded.download='an-tinh-khung-anh.png';
-    saved.classList.add('show');
-    const a=document.createElement('a');a.href=lastURL;a.download='an-tinh-khung-anh.png';
-    document.body.appendChild(a);a.click();a.remove();
-    status.textContent='Thiết bị không hỗ trợ chia sẻ trực tiếp; ảnh đã được tải xuống.';
-   }
-  },'image/png');
- }catch(e){if(e.name!=='AbortError')status.textContent='Không thể chia sẻ ảnh.'}
+$('height').oninput=e=>{
+  const v=+e.target.value;
+  state.height=v;
+  if($('lock').checked){state.width=v;$('width').value=v;}
+  updateLabels();draw();
 };
+$('x').oninput=e=>{state.x=+e.target.value;updateLabels();draw();};
+$('y').oninput=e=>{state.y=+e.target.value;updateLabels();draw();};
+$('rotate').oninput=e=>{state.rotate=+e.target.value;updateLabels();draw();};
+$('fit').onclick=()=>fitMode('cover');
+$('contain').onclick=()=>fitMode('contain');
+$('reset').onclick=reset;
+$('flipH').onclick=()=>{state.flipH*=-1;draw();};
+$('flipV').onclick=()=>{state.flipV*=-1;draw();};
+$('clear').onclick=()=>{photo=null;$('file').value='';$('status').textContent='Đã xóa ảnh. Hãy chọn ảnh mới.';draw();};
+$('download').onclick=()=>{
+  if(!photo){alert('Bạn chưa tải ảnh lên.');return;}
+  const a=document.createElement('a');
+  a.download='an-tinh-khung-anh.png';
+  a.href=canvas.toDataURL('image/png');
+  a.click();
+};
+Promise.all([new Promise(r=>maskImg.onload=r),new Promise(r=>frameImg.onload=r)]).then(draw);
+updateLabels();
 </script>
 </body>
 </html>
